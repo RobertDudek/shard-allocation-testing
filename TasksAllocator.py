@@ -3,7 +3,7 @@ import math
 
 class TasksAllocator:
 
-    def __init__(self, tasks, n_intervals):
+    def __init__(self, tasks, n_intervals, n_cloud_nodes):
         '''
         :param tasks: obiekty zadań
         :param n_intervals: ile przedziałów
@@ -23,7 +23,7 @@ class TasksAllocator:
         self.shard_load_vect = None
         self.summed_vects = {}
         self.wts = None
-        self.n_cloud_nodes = 100
+        self.n_cloud_nodes = n_cloud_nodes
         self.norm_wts = None
 
     def find_shards_load_vectors(self):
