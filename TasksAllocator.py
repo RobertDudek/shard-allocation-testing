@@ -22,7 +22,7 @@ class TasksAllocator:
         self.shards = []
         self.shard_load_vect = None
         self.summed_vects = {}
-        self.wts = None
+        self.wts = []
         self.n_cloud_nodes = n_cloud_nodes
         self.norm_wts = None
 
@@ -36,11 +36,11 @@ class TasksAllocator:
             self.shards.append(task.shard)
 
         #słownik, klucz szard : wartość wektor obciążeń
-        intervals = [[0]* self.n_intervals] * len(self.shards)
+        intervals = [[0]* len(self.intervals)] * len(self.shards)
         self.shards_load_vect = dict(zip(self.shards, intervals))
 
         for shard in self.shards:
-            shard_vect = [0]*self.n_intervals
+            shard_vect = [0]*len(self.intervals)
             for task in self.tasks:
                 if task.shard != shard:
                     #jeżeli w zadaniu mamy inny shard, sprawdź kolejne zadanie
@@ -57,16 +57,22 @@ class TasksAllocator:
                             shard_vect[i+1] += (task.length - (self.intervals[i] - task.TS))/delta
                             break
                 self.shards_load_vect.update({shard: shard_vect})
-        #print(self.shards_load_vect)
+        print("WEKTORY OBCIĄŻEŃ W SŁOWNIKU")
+        print(self.shards_load_vect)
 
     def find_wts(self):
-        #sumuj obciążenia dla poszczególnych shardów
-        self.summed_vects = dict(zip(self.shards_load_vect.keys(), [sum(v) for v in self.shards_load_vect.values()]))
-        print(self.summed_vects)
-        #sumuj obciążenie dla wszystkich shardów
-        self.wts = sum(self.summed_vects.values())
+        #changed to summing in intervals, return vector
+        self.wts = [0] * (len(self.intervals))
+        #print(self.wts)
+        for v in self.shards_load_vect.values():
+            for i in range(len(v)):
+                self.wts[i] += v[i]
+        print("WTS")
         print(self.wts)
 
     def find_norm_wts(self):
-        self.norm_wts = 1/self.n_cloud_nodes*self.wts
+        self.norm_wts = [0] * (len(self.intervals))
+        for i in range(len(self.wts)):
+            self.norm_wts[i] = 1/self.n_cloud_nodes*self.wts[i]
+        print("NORM WTS")
         print(self.norm_wts)
