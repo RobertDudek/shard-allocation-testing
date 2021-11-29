@@ -29,8 +29,47 @@ if __name__ == '__main__':
     #Dla każdego węzła utwórz pusty podzbiór fragmentów danych FSi i pusty wektor obciążenia węzła WSi.
     # Wszystkie węzły zaznacz jako aktywne.
     cloudNodes = []
+    minusNWTS = list(map(lambda x: x * -1, tasksAll.norm_wts))
+    WS_vector = [0] * len(tasksAll.intervals)
+    #print(abs(sum(minusNWTS)))
     for i in range(cloud_nodes):
-        cloudNo = CloudNode()
+        # DONE: przy tworzeniu wezlow podaj wektor obciazenia wypelniony zerami oraz wektor niezrownowazenia (Ws-NWTS)
+        cloudNo = CloudNode(i, WS_vector, minusNWTS)
         cloudNodes.append(cloudNo)
+        #print(cloudNo.WS_vector)
 
+    #5.	Przetwarzaj kolejno elementy lwi listy LW.
+    for shard in shardVectors:
+        remember_id = -1
+        max_mod_substraction = 0
+        compare_modules = 0
+        for cloudNo in cloudNodes:
+            if cloudNo.active:
+                #suma wektora obciazenia wezla + wektora obciazenia danego shardu
+                after_sum = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
+                #wektor niezrownowazenia przed dodaniem - mamy w obiekcie cloudNo
+                #wektor niezrownowazenia po dodaniu hipotetycznie:
+                after_unbalanced = [x - y for x, y in zip(after_sum, tasksAll.norm_wts)]
+                #maksymalizacja wartości różnicy między modułami dwóch wektorów niezrównoważenia obciążenia
+                before_module = sum(abs(number) for number in cloudNo.unbalanced)
+                after_module = sum(abs(number) for number in after_unbalanced)
+                compare_modules = after_module - before_module
+
+                if compare_modules > max_mod_substraction:
+                    max_mod_substraction = compare_modules
+                    remember_id = cloudNo.id
+        if remember_id != -1:
+            index = [x.id for x in cloudNodes].index(remember_id)
+            cloudNodes[index].FS_subset.append(shard)
+            cloudNodes[index].WS_vector = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
+            cloudNodes[index].unbalanced = [x - y for x, y in zip(cloudNo.WS_vector, tasksAll.norm_wts)]
+
+            check_module_ws = sum(abs(number) for number in cloudNo.WS_vector)
+            check_module_nwts = sum(abs(number) for number in tasksAll.norm_wts)
+            if check_module_ws > check_module_nwts:
+                cloudNodes[index].active = False
+
+    print("Shardow: "+str(len(shardVectors)))
+    for cloudNo in cloudNodes:
+        print(len(cloudNo.FS_subset))
 
