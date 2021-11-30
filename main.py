@@ -41,23 +41,26 @@ if __name__ == '__main__':
     #5.	Przetwarzaj kolejno elementy lwi listy LW.
     for shard in shardVectors:
         remember_id = -1
-        max_mod_substraction = 0
+        max_mod_substraction = -100
         compare_modules = 0
         for cloudNo in cloudNodes:
             if cloudNo.active:
-                #suma wektora obciazenia wezla + wektora obciazenia danego shardu
+                #suma wektora obciazenia wezla + wektora obciazenia danego shardu hipotetycznie
                 after_sum = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
-                #wektor niezrownowazenia przed dodaniem - mamy w obiekcie cloudNo
+                #wektor niezrownowazenia przed dodaniem - mamy w obiekcie cloudNo jako unbalanced
                 #wektor niezrownowazenia po dodaniu hipotetycznie:
                 after_unbalanced = [x - y for x, y in zip(after_sum, tasksAll.norm_wts)]
                 #maksymalizacja wartości różnicy między modułami dwóch wektorów niezrównoważenia obciążenia
                 before_module = sum(abs(number) for number in cloudNo.unbalanced)
                 after_module = sum(abs(number) for number in after_unbalanced)
                 compare_modules = after_module - before_module
-
                 if compare_modules > max_mod_substraction:
                     max_mod_substraction = compare_modules
                     remember_id = cloudNo.id
+        #Gdyby jakies szardy nie byly przypisane do wezla tutaj mozna printowac
+        # if remember_id == -1:
+        #     print(compare_modules)
+        #     print(shard.shard)
         if remember_id != -1:
             index = [x.id for x in cloudNodes].index(remember_id)
             cloudNodes[index].FS_subset.append(shard)
@@ -68,10 +71,11 @@ if __name__ == '__main__':
             if check_module_ws > check_module_nwts:
                 cloudNodes[index].active = False
 
-    print("Shardow: "+str(len(shardVectors)))
+    #CHECK
     count = 0
     for cloudNo in cloudNodes:
         print(len(cloudNo.FS_subset))
         count += (len(cloudNo.FS_subset))
-    print(count)
+    print("Shardow na wejsciu: " + str(len(shardVectors)))
+    print("Shardy przypisane: " + str(count))
 
