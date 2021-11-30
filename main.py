@@ -61,15 +61,17 @@ if __name__ == '__main__':
         if remember_id != -1:
             index = [x.id for x in cloudNodes].index(remember_id)
             cloudNodes[index].FS_subset.append(shard)
-            cloudNodes[index].WS_vector = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
-            cloudNodes[index].unbalanced = [x - y for x, y in zip(cloudNo.WS_vector, tasksAll.norm_wts)]
-
-            check_module_ws = sum(abs(number) for number in cloudNo.WS_vector)
+            cloudNodes[index].WS_vector = [x + y for x, y in zip(cloudNodes[index].WS_vector, shard.load_vector)]
+            cloudNodes[index].unbalanced = [x - y for x, y in zip(cloudNodes[index].WS_vector, tasksAll.norm_wts)]
+            check_module_ws = sum(abs(number) for number in cloudNodes[index].WS_vector)
             check_module_nwts = sum(abs(number) for number in tasksAll.norm_wts)
             if check_module_ws > check_module_nwts:
                 cloudNodes[index].active = False
 
     print("Shardow: "+str(len(shardVectors)))
+    count = 0
     for cloudNo in cloudNodes:
         print(len(cloudNo.FS_subset))
+        count += (len(cloudNo.FS_subset))
+    print(count)
 
