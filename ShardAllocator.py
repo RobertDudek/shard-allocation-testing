@@ -9,6 +9,7 @@ class ShardAllocator:
         self.tasks = tasks
         self.norm_wts = norm_wts
         self.cloudNodes = []
+        self.cloud_nodes = cloud_nodes
 
         for i in range(cloud_nodes):
             # DONE: przy tworzeniu wezlow podaj wektor obciazenia wypelniony zerami oraz wektor niezrownowazenia (Ws-NWTS)
@@ -76,7 +77,7 @@ class ShardAllocator:
         return self.cloudNodes
 
     def delay(self):
-        time = [0] * cloud_nodes
+        time = [0] * self.cloud_nodes
         shardsInClouds = list(map(lambda shards: list(map(lambda x: x.shard, shards)), list(map(lambda sh: sh.FS_subset, self.cloudNodes)))) #kurna nawet nie pytaj
         delay = 0
         for task in self.tasks:
