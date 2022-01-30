@@ -31,7 +31,7 @@ class TasksAllocator:
         #delta - szerokość naszych przedziałów, co ile kolejny przedział
         delta = math.ceil((self.tasks[-1].TS+self.tasks[-1].length) / self.n_intervals)
         self.intervals = [*range(delta, math.ceil(self.tasks[-1].TS+self.tasks[-1].length)+delta, delta)]
-        print(self.intervals)
+        #print(self.intervals)
         for task in self.tasks:
             self.shards.append(task.shard)
 
@@ -57,8 +57,8 @@ class TasksAllocator:
                             shard_vect[i+1] += (task.length - (self.intervals[i] - task.TS))/delta
                             break
                 self.shards_load_vect.update({shard: shard_vect})
-        print("WEKTORY OBCIĄŻEŃ W SŁOWNIKU")
-        print(self.shards_load_vect)
+        #print("WEKTORY OBCIĄŻEŃ W SŁOWNIKU")
+        #print(self.shards_load_vect)
 
     def find_wts(self):
         #changed to summing in intervals, return vector
@@ -67,12 +67,12 @@ class TasksAllocator:
         for v in self.shards_load_vect.values():
             for i in range(len(v)):
                 self.wts[i] += v[i]
-        print("WTS")
-        print(self.wts)
+        #print("WTS")
+        #print(self.wts)
 
     def find_norm_wts(self):
         self.norm_wts = [0] * (len(self.intervals))
         for i in range(len(self.wts)):
             self.norm_wts[i] = 1/self.n_cloud_nodes*self.wts[i]
-        print("NORM WTS")
-        print(self.norm_wts)
+        #print("NORM WTS")
+        #print(self.norm_wts)
