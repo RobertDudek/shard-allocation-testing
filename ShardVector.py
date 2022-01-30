@@ -6,3 +6,4 @@ class ShardVector:
         self.shard = shard
         self.load_vector = vect
         self.sum = sum
+        self.avg = sum/len(self.load_vector)
