@@ -12,8 +12,8 @@ if __name__ == '__main__':
     cloud_nodes = 100
     r = gen.generate_file(file_name='Example1.txt', scale_exp_low=1.0, scale_exp_high=10.0, phases=5, homogeneity=1.0)
     #r = Reader.read_file('Example2.txt')
-    print(*r, sep='\n')
-    print('Mean deltaTS:', r[~0].TS/len(r), 'Mean length:', sum(x.length for x in r)/len(r))
+    #print(*r, sep='\n')
+    #print('Mean deltaTS:', r[~0].TS/len(r), 'Mean length:', sum(x.length for x in r)/len(r))
     ###
     #100 przedziałów, 100 węzłów
     tasksAll = TasksAllocator(r, 100, cloud_nodes)
@@ -31,94 +31,29 @@ if __name__ == '__main__':
     #shardVectors.sort(key=lambda x: x.sum, reverse=True)
 
 
-    print("RR--------------------------------------------------")
+    print("-----------RoundRobin-----------")
     rr = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesRR = rr.rr()
-    count = 0
-    balance = []
-    for cloudNo in cloudNodesRR:
-        #print("cloud no: ", cloudNo.id, " poziom zrownowazenia: ", sum([(x + y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        balance.append(sum([abs(x - y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        #print(list(map(lambda sh: sh.shard, cloudNo.FS_subset)))
-        count += (len(cloudNo.FS_subset))
-    print("sredni poziom zrownowazenia: ", round(sum(balance)/len(balance), 2))
-    print("opoznienie: ", round(rr.delay(cloudNodesRR, r),2))
+    # Kontrola przypisanych shardów
+    rr.check()
 
-    print("BF--------------------------------------------------")
+    print("sredni poziom zrownowazenia: ", rr.balance_level())
+    print("opoznienie: ", rr.delay())
+
+    print("-----------BestFit--------------")
     bestfit = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesBF = bestfit.bestfit()
-    count = 0
-    balance = []
-    for cloudNo in cloudNodesBF:
-        #print("cloud no: ", cloudNo.id, " poziom zrownowazenia: ", sum([(x + y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        balance.append(sum([abs(x - y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        #print(list(map(lambda sh: sh.shard, cloudNo.FS_subset)))
-        count += (len(cloudNo.FS_subset))
-    print("sredni poziom zrownowazenia: ", round(sum(balance)/len(balance), 2))
-    print("opoznienie: ", round(rr.delay(cloudNodesBF, r),2))
+    # Kontrola przypisanych shardów
+    bestfit.check()
 
-    print("SALP--------------------------------------------------")
+    print("sredni poziom zrownowazenia: ", bestfit.balance_level())
+    print("opoznienie: ", bestfit.delay())
+
+    print("-----------Salp-----------------")
     salp = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesSALP = salp.salp()
-    count = 0
-    balance = []
-    for cloudNo in cloudNodesSALP:
-        #print("cloud no: ", cloudNo.id, " poziom zrownowazenia: ", sum([(x + y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        balance.append(sum([abs(x - y)/x for x, y in zip(tasksAll.norm_wts, cloudNo.WS_vector)]))
-        #print(list(map(lambda sh: sh.shard, cloudNo.FS_subset)))
-        count += (len(cloudNo.FS_subset))
-    print("sredni poziom zrownowazenia: ", round(sum(balance)/len(balance), 2))
-    print("opoznienie: ", round(rr.delay(cloudNodesSALP, r),2))
-    ###
-    #Dla każdego węzła utwórz pusty podzbiór fragmentów danych FSi i pusty wektor obciążenia węzła WSi.
-    # Wszystkie węzły zaznacz jako aktywne.
-    cloudNodes = []
-    minusNWTS = list(map(lambda x: x * -1, tasksAll.norm_wts))
-    WS_vector = [0] * len(tasksAll.intervals)
-    #print(abs(sum(minusNWTS)))
-    for i in range(cloud_nodes):
-        # DONE: przy tworzeniu wezlow podaj wektor obciazenia wypelniony zerami oraz wektor niezrownowazenia (Ws-NWTS)
-        cloudNo = CloudNode(i, WS_vector, minusNWTS)
-        cloudNodes.append(cloudNo)
-        #print(cloudNo.WS_vector)
+    # Kontrola przypisanych shardów
+    salp.check()
 
-    #5.	Przetwarzaj kolejno elementy lwi listy LW.
-    for shard in shardVectors:
-        remember_id = -1
-        max_mod_substraction = -100
-        compare_modules = 0
-        for cloudNo in cloudNodes:
-            if cloudNo.active:
-                #suma wektora obciazenia wezla + wektora obciazenia danego shardu hipotetycznie
-                after_sum = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
-                #wektor niezrownowazenia przed dodaniem - mamy w obiekcie cloudNo jako unbalanced
-                #wektor niezrownowazenia po dodaniu hipotetycznie:
-                after_unbalanced = [x - y for x, y in zip(after_sum, tasksAll.norm_wts)]
-                #maksymalizacja wartości różnicy między modułami dwóch wektorów niezrównoważenia obciążenia
-                before_module = sum(abs(number) for number in cloudNo.unbalanced)
-                after_module = sum(abs(number) for number in after_unbalanced)
-                compare_modules = after_module - before_module
-                if compare_modules > max_mod_substraction:
-                    max_mod_substraction = compare_modules
-                    remember_id = cloudNo.id
-        #Gdyby jakies szardy nie byly przypisane do wezla tutaj mozna printowac
-        # if remember_id == -1:
-        #     print(compare_modules)
-        #     print(shard.shard)
-        if remember_id != -1:
-            index = [x.id for x in cloudNodes].index(remember_id)
-            cloudNodes[index].FS_subset.append(shard)
-            cloudNodes[index].WS_vector = [x + y for x, y in zip(cloudNodes[index].WS_vector, shard.load_vector)]
-            cloudNodes[index].unbalanced = [x - y for x, y in zip(cloudNodes[index].WS_vector, tasksAll.norm_wts)]
-            check_module_ws = sum(abs(number) for number in cloudNodes[index].WS_vector)
-            check_module_nwts = sum(abs(number) for number in tasksAll.norm_wts)
-            if check_module_ws > check_module_nwts:
-                cloudNodes[index].active = False
-
-    #CHECK
-    count = 0
-    for cloudNo in cloudNodes:
-        #print(len(cloudNo.FS_subset))
-        count += (len(cloudNo.FS_subset))
-    print("Shardow na wejsciu: " + str(len(shardVectors)))
-    print("Shardy przypisane: " + str(count))
+    print("sredni poziom zrownowazenia: ", salp.balance_level())
+    print("opoznienie: ", salp.delay())
