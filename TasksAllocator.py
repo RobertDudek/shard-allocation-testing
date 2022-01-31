@@ -27,36 +27,41 @@ class TasksAllocator:
         self.norm_wts = None
 
     def find_shards_load_vectors(self):
-        self.tasks.sort(key=lambda task: task.TS, reverse=False)
+        self.tasks.sort(key=lambda task: task.TS+task.length, reverse=False)
         #delta - szerokość naszych przedziałów, co ile kolejny przedział
         delta = math.ceil((self.tasks[-1].TS+self.tasks[-1].length) / self.n_intervals)
         self.intervals = [*range(delta, math.ceil(self.tasks[-1].TS+self.tasks[-1].length)+delta, delta)]
         #print(self.intervals)
+        shards = set()
         for task in self.tasks:
-            self.shards.append(task.shard)
+            shards.add(task.shard)
+        self.shards = sorted(list(shards))
+
 
         #słownik, klucz szard : wartość wektor obciążeń
-        intervals = [[0]* len(self.intervals)] * len(self.shards)
-        self.shards_load_vect = dict(zip(self.shards, intervals))
+        intervals = [[0 for _ in range(len(self.intervals))] for _ in range(len(self.shards))]
 
-        for shard in self.shards:
-            shard_vect = [0]*len(self.intervals)
-            for task in self.tasks:
-                if task.shard != shard:
-                    #jeżeli w zadaniu mamy inny shard, sprawdź kolejne zadanie
-                    continue
-                for i in range(len(self.intervals)):
-                    if task.TS < self.intervals[i]:
-                        #jeżeli długość zadania mieści się w przedziale
-                        if task.TS + task.length < self.intervals[i]:
-                            shard_vect[i] += (task.length/delta)
-                            break
-                        #jeżeli długość się nie mieści
-                        else:
-                            shard_vect[i] += (self.intervals[i] - task.TS)/delta
-                            shard_vect[i+1] += (task.length - (self.intervals[i] - task.TS))/delta
-                            break
-                self.shards_load_vect.update({shard: shard_vect})
+        for task in self.tasks:
+            mapped_shard = self.shards.index(task.shard)
+            first_interval = math.floor(task.TS/delta)
+            last_interval = math.floor((task.TS + task.length)/delta)
+            # jeżeli długość zadania mieści się w przedziale
+            if first_interval == last_interval:
+                intervals[mapped_shard][first_interval] += (task.length/delta)
+            # jeżeli długość się nie mieści
+            else:
+                # część w pierwszym przedziale
+                part_inside_first_interval = self.intervals[first_interval] - task.TS
+                intervals[mapped_shard][first_interval] += part_inside_first_interval / delta
+                # pełne przedziały
+                for i in range(first_interval+1, last_interval, 1):
+                    # print(f"pełny przedział w {task = }")
+                    intervals[mapped_shard][i] = 1
+                # część w ostatnim przedziale
+                part_inside_last_interval = (task.TS+task.length) - self.intervals[last_interval-1]
+                intervals[mapped_shard][last_interval] += part_inside_last_interval / delta
+
+        self.shards_load_vect = dict(zip(self.shards, intervals))
         #print("WEKTORY OBCIĄŻEŃ W SŁOWNIKU")
         #print(self.shards_load_vect)
 
