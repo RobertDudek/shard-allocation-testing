@@ -17,30 +17,26 @@ class ShardAllocator:
             self.cloudNodes.append(cloudNo)
 
     def rr(self):
-        cloudNodes = self.cloudNodes
-        cloud_nodes = len(cloudNodes)
-        cloud_idx = 0 #zaczynamy od zerowego indeksu chmury
+        cloud_idx = 0
         for shard in self.shardVectors:
-            cloudNodes[cloud_idx].FS_subset.append(shard)
-            cloudNodes[cloud_idx].WS_vector = [x + y for x, y in zip(cloudNodes[cloud_idx].WS_vector, shard.load_vector)]
-            if cloud_idx+1 < cloud_nodes:
+            self.cloudNodes[cloud_idx].FS_subset.append(shard)
+            self.cloudNodes[cloud_idx].WS_vector = [x + y for x, y in zip(self.cloudNodes[cloud_idx].WS_vector, shard.load_vector)]
+            if cloud_idx+1 < self.cloud_nodes:
                 cloud_idx +=1
             else:
                 cloud_idx = 0
-        return cloudNodes
+        return self.cloudNodes
 
     def bestfit(self):
-        cloudNodes = self.cloudNodes
         self.shardVectors.sort(key=lambda x: x.avg, reverse=True)
         for shard in self.shardVectors:
-            cloudNodes.sort(key=lambda x: sum(x.WS_vector)/len(x.WS_vector), reverse=False)
+            self.cloudNodes.sort(key=lambda x: sum(x.WS_vector)/len(x.WS_vector), reverse=False)
             #print("najmniej ma: ", cloudNodes[0].id, " czyli: ", sum(cloudNodes[0].WS_vector)/len(cloudNodes[0].WS_vector))
-            cloudNodes[0].FS_subset.append(shard)
-            cloudNodes[0].WS_vector = [x + y for x, y in zip(cloudNodes[0].WS_vector, shard.load_vector)]
-        return cloudNodes
+            self.cloudNodes[0].FS_subset.append(shard)
+            self.cloudNodes[0].WS_vector = [x + y for x, y in zip(self.cloudNodes[0].WS_vector, shard.load_vector)]
+        return self.cloudNodes
 
     def salp(self):
-        cloudNodes = self.cloudNodes
         #5.	Przetwarzaj kolejno elementy lwi listy LW.
         self.shardVectors.sort(key=lambda x: x.sum, reverse=True)
         for shard in self.shardVectors:
@@ -78,14 +74,14 @@ class ShardAllocator:
 
     def delay(self):
         time = [0] * self.cloud_nodes
-        shardsInClouds = list(map(lambda shards: list(map(lambda x: x.shard, shards)), list(map(lambda sh: sh.FS_subset, self.cloudNodes)))) #kurna nawet nie pytaj
+        shardsInClouds = list(map(lambda shards: list(map(lambda x: x.shard, shards)), list(map(lambda sh: sh.FS_subset, self.cloudNodes))))
         delay = 0
         for task in self.tasks:
             cloudIndex = next((shardsInClouds.index(x) for x in shardsInClouds if task.shard in x), None)
             if task.TS >= time[cloudIndex]:
                 time[cloudIndex] = task.TS + task.length
             else:
-                time[cloudIndex] += task.TS
+                time[cloudIndex] += task.length
                 delay += time[cloudIndex] - (task.TS + task.length)
         return round(delay,2)
 
