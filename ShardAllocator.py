@@ -44,6 +44,7 @@ class ShardAllocator:
             max_mod_substraction = -100
             compare_modules = 0
             for cloudNo in self.cloudNodes:
+                #print(cloudNo.active)
                 if cloudNo.active:
                     #suma wektora obciazenia wezla + wektora obciazenia danego shardu hipotetycznie
                     after_sum = [x + y for x, y in zip(cloudNo.WS_vector, shard.load_vector)]
@@ -67,9 +68,13 @@ class ShardAllocator:
                 self.cloudNodes[index].WS_vector = [x + y for x, y in zip(self.cloudNodes[index].WS_vector, shard.load_vector)]
                 self.cloudNodes[index].unbalanced = [x - y for x, y in zip(self.cloudNodes[index].WS_vector, self.norm_wts)]
                 check_module_ws = sum(abs(number) for number in self.cloudNodes[index].WS_vector)
+                #print(self.cloudNodes[index].WS_vector)
+                #print(check_module_ws)
                 check_module_nwts = sum(abs(number) for number in self.norm_wts)
+                #print(check_module_nwts)
                 if check_module_ws > check_module_nwts:
                     self.cloudNodes[index].active = False
+
         return self.cloudNodes
 
     def delay(self):
@@ -91,7 +96,7 @@ class ShardAllocator:
         for cloudNo in self.cloudNodes:
             #print("cloud no: ", cloudNo.id, " poziom zrownowazenia: ", list(zip(self.norm_wts, cloudNo.WS_vector)))
             balance.append(sum([abs(x - y)/x for x, y in zip(self.norm_wts, cloudNo.WS_vector)]))
-            #print(list(map(lambda sh: sh.shard, cloudNo.FS_subset)))
+            print(list(map(lambda sh: sh.shard, cloudNo.FS_subset)))
             count += (len(cloudNo.FS_subset))
         return round(sum(balance)/len(balance), 2)
 
