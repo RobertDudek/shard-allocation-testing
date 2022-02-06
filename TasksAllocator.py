@@ -44,7 +44,7 @@ class TasksAllocator:
         for task in self.tasks:
             mapped_shard = self.shards.index(task.shard)
             first_interval = math.floor(task.TS/delta)
-            last_interval = math.floor((task.TS + task.length - 1)/delta)
+            last_interval = math.ceil((task.TS + task.length)/delta - 1)
             # jeżeli długość zadania mieści się w przedziale
             if first_interval == last_interval:
                 intervals[mapped_shard][first_interval] += (task.length/delta)
