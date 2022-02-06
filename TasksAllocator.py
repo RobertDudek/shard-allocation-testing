@@ -31,7 +31,7 @@ class TasksAllocator:
         #delta - szerokość naszych przedziałów, co ile kolejny przedział
         delta = math.ceil((self.tasks[-1].TS+self.tasks[-1].length) / self.n_intervals)
         self.intervals = [*range(delta, math.ceil(self.tasks[-1].TS+self.tasks[-1].length)+delta, delta)]
-        #print(self.intervals)
+        print(self.intervals)
         shards = set()
         for task in self.tasks:
             shards.add(task.shard)
@@ -44,7 +44,10 @@ class TasksAllocator:
         for task in self.tasks:
             mapped_shard = self.shards.index(task.shard)
             first_interval = math.floor(task.TS/delta)
-            last_interval = math.floor((task.TS + task.length)/delta)
+            #zmiana: odejmwowanie jedynki w last interval
+            last_interval = math.floor((task.TS + task.length-1)/delta)
+            print(first_interval)
+            print(last_interval)
             # jeżeli długość zadania mieści się w przedziale
             if first_interval == last_interval:
                 intervals[mapped_shard][first_interval] += (task.length/delta)
