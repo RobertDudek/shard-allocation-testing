@@ -38,7 +38,7 @@ class Generator:
                           "the extension of the erlang distribution")
 
         submission_time_mean_length = task_mean_length/load
-        scale_exp_low = submission_times_CV_delta * submission_time_mean_length
+        scale_exp_low = (1-submission_times_CV_delta) * submission_time_mean_length
         scale_exp_high = (1+submission_times_CV_delta) * submission_time_mean_length
         scale_length_erlang = task_mean_length/length_erlang_k
         shards = self.generate_int(size=size, high=shards_num)
