@@ -100,5 +100,5 @@ class ShardAllocator:
         for cloudNo in self.cloudNodes:
             #print(len(cloudNo.FS_subset))
             count += (len(cloudNo.FS_subset))
-        print("Shardow na wejsciu: " + str(len(self.shardVectors)))
-        print("Shardy przypisane: " + str(count))
+        #print("Shardow na wejsciu: " + str(len(self.shardVectors)))
+        #print("Shardy przypisane: " + str(count))

@@ -4,8 +4,10 @@ from TasksAllocator import TasksAllocator
 from ShardVector import ShardVector
 from CloudNode import CloudNode
 from ShardAllocator import ShardAllocator
+import numpy as np
+import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+def throwupplots(load, submission_times_CV_delta, task_mean_length, rr_res, bf_res, salp_res):
     gen = Generator()
     cloud_nodes = 100
     # Teraz można używać parametrów (D - Dziedzina):
@@ -19,11 +21,11 @@ if __name__ == '__main__':
     # 5) phases = liczba faz, testować może <1,1/4*size> (?) D=<1, 1/2*size> (int) domyślnie 10
     # 6) shards_num = ilość szardów, D=<1,inf) (int) domyślnie 1,000
     # 7) size = ile wygenerować zadań, z założenia można iść w nieskończoność, D=(1,inf) (int) domyślnie 10,000 ,
-    r = gen.generate_file(file_name='Example1.txt', load=0.5, submission_times_CV_delta=0.5, homogeneity=1.0,
-                          task_mean_length=100, phases=10, shards_num=1000, size=10000)
+    r = gen.generate_file(file_name='Example1.txt', load=load, submission_times_CV_delta=submission_times_CV_delta, homogeneity=1.0,
+                          task_mean_length=task_mean_length, phases=10, shards_num=1000, size=10000)
     # r = Reader.read_file('Example2.txt')
     # print(*r, sep='\n')
-    print('Mean deltaTS:', r[~0].TS / len(r), 'Mean length:', sum(x.length for x in r) / len(r))
+    #print('Mean deltaTS:', r[~0].TS / len(r), 'Mean length:', sum(x.length for x in r) / len(r))
     ###
     # 100 przedziałów, 100 węzłów
     tasksAll = TasksAllocator(r, 100, cloud_nodes)
@@ -40,29 +42,57 @@ if __name__ == '__main__':
         shardVectors.append(shardVec)
     # shardVectors.sort(key=lambda x: x.sum, reverse=True)
 
-    print("-----------RoundRobin-----------")
+    #print("-----------RoundRobin-----------")
     rr = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesRR = rr.rr()
     # Kontrola przypisanych shardów
     rr.check()
+    rr_res[0].append(rr.balance_level())
+    rr_res[1].append(rr.delay())
+    #print("sredni poziom zrownowazenia: ", rr.balance_level())
+    #print("opoznienie: ", rr.delay())
 
-    print("sredni poziom zrownowazenia: ", rr.balance_level())
-    print("opoznienie: ", rr.delay())
-
-    print("-----------BestFit--------------")
+    #print("-----------BestFit--------------")
     bestfit = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesBF = bestfit.bestfit()
     # Kontrola przypisanych shardów
     bestfit.check()
+    bf_res[0].append(bestfit.balance_level())
+    bf_res[1].append(bestfit.delay())
+    #print("sredni poziom zrownowazenia: ", bestfit.balance_level())
+    #print("opoznienie: ", bestfit.delay())
 
-    print("sredni poziom zrownowazenia: ", bestfit.balance_level())
-    print("opoznienie: ", bestfit.delay())
-
-    print("-----------Salp-----------------")
+    #print("-----------Salp-----------------")
     salp = ShardAllocator(shardVectors, cloud_nodes, r, tasksAll.norm_wts, WS_vector, minusNWTS)
     cloudNodesSALP = salp.salp()
     # Kontrola przypisanych shardów
     salp.check()
+    salp_res[0].append(salp.balance_level())
+    salp_res[1].append(salp.delay())
+    #print("sredni poziom zrownowazenia: ", salp.balance_level())
+    #print("opoznienie: ", salp.delay())
+    return rr_res, bf_res, salp_res
 
-    print("sredni poziom zrownowazenia: ", salp.balance_level())
-    print("opoznienie: ", salp.delay())
+if __name__ == '__main__':
+    rr_res=[[],[]]
+    bf_res=[[],[]]
+    salp_res = [[],[]]
+    t = np.arange(0.1,0.9, 0.05)
+    for n in t:
+        rr_res, bf_res, salp_res = throwupplots(load=0.5, submission_times_CV_delta=n, task_mean_length=100, rr_res=rr_res, bf_res=bf_res, salp_res=salp_res)
+
+    plot1 = plt.figure(1)
+    plt.plot(t, rr_res[0], 'r-', label='RoundRobin')
+    plt.plot(t, bf_res[0], 'b-', label='BestFit')
+    plt.plot(t, salp_res[0], 'g-', label='SALP')
+    plt.legend(loc="best")
+    plt.xlabel("Średni rozmiar zadań")
+    plt.ylabel("Poziom zrównoważenia")
+    plot2 = plt.figure(2)
+    plt.plot(t, rr_res[1], 'r-', label='RoundRobin')
+    plt.plot(t, bf_res[1], 'b-', label='BestFit')
+    plt.plot(t, salp_res[1], 'g-', label='SALP')
+    plt.legend(loc="best")
+    plt.xlabel("Średni rozmiar zadań")
+    plt.ylabel("Średnie opóźnienie")
+    plt.show()
